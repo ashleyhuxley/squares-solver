@@ -250,10 +250,10 @@
             character16.TextChanged += CharacterTextChanged;
             character16.Enter += CharacterEnter;
             // 
-            // wordsListTextbox
+            // wordList
             // 
             wordList.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            wordList.ColumnWidth = 150;
+            wordList.ColumnWidth = 220;
             wordList.Font = new Font("Source Code Pro Medium", 18F, FontStyle.Bold, GraphicsUnit.Point, 0);
             wordList.FormattingEnabled = true;
             wordList.ItemHeight = 30;
