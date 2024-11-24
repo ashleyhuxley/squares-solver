@@ -2,17 +2,9 @@
 
 namespace ElectricFox.SquaresSolver
 {
-    public class Solver
+    public class Solver(char[,] letters)
     {
-        private readonly HashSet<Point> usedPlaces;
-
-        private readonly char[,] letters;
-
-        public Solver(char[,] letters)
-        {
-            this.letters = letters;
-            this.usedPlaces = new HashSet<Point>();
-        }
+        private readonly HashSet<Point> usedPlaces = [];
 
         public bool IsValidWord(string word)
         {

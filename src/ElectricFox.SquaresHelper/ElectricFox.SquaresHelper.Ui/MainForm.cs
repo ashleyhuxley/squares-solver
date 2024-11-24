@@ -48,12 +48,21 @@ namespace ElectricFox.SquaresHelper.Ui
                 }
             }
 
-            var sb = new StringBuilder();
+            wordList.Items.Clear();
             foreach (var item in words.OrderByDescending(w => w.Length).ThenBy(w => w))
             {
-                sb.AppendLine(item);
+                wordList.Items.Add(item);
             }
-            wordsListTextbox.Text = sb.ToString();
+        }
+
+        private void CharacterTextChanged(object sender, EventArgs e)
+        {
+            SelectNextControl((TextBox)sender, true, true, false, true);
+        }
+
+        private void CharacterEnter(object sender, EventArgs e)
+        {
+            ((TextBox)sender).SelectAll();
         }
     }
 }

@@ -45,7 +45,7 @@
             character14 = new TextBox();
             character15 = new TextBox();
             character16 = new TextBox();
-            wordsListTextbox = new TextBox();
+            wordList = new ListBox();
             SuspendLayout();
             // 
             // findButton
@@ -67,6 +67,8 @@
             character1.Size = new Size(45, 44);
             character1.TabIndex = 3;
             character1.TextAlign = HorizontalAlignment.Center;
+            character1.TextChanged += CharacterTextChanged;
+            character1.Enter += CharacterEnter;
             // 
             // character2
             // 
@@ -77,6 +79,8 @@
             character2.Size = new Size(45, 44);
             character2.TabIndex = 4;
             character2.TextAlign = HorizontalAlignment.Center;
+            character2.TextChanged += CharacterTextChanged;
+            character2.Enter += CharacterEnter;
             // 
             // character3
             // 
@@ -87,6 +91,8 @@
             character3.Size = new Size(45, 44);
             character3.TabIndex = 5;
             character3.TextAlign = HorizontalAlignment.Center;
+            character3.TextChanged += CharacterTextChanged;
+            character3.Enter += CharacterEnter;
             // 
             // character4
             // 
@@ -97,6 +103,8 @@
             character4.Size = new Size(45, 44);
             character4.TabIndex = 6;
             character4.TextAlign = HorizontalAlignment.Center;
+            character4.TextChanged += CharacterTextChanged;
+            character4.Enter += CharacterEnter;
             // 
             // character5
             // 
@@ -107,6 +115,8 @@
             character5.Size = new Size(45, 44);
             character5.TabIndex = 7;
             character5.TextAlign = HorizontalAlignment.Center;
+            character5.TextChanged += CharacterTextChanged;
+            character5.Enter += CharacterEnter;
             // 
             // character6
             // 
@@ -117,6 +127,8 @@
             character6.Size = new Size(45, 44);
             character6.TabIndex = 8;
             character6.TextAlign = HorizontalAlignment.Center;
+            character6.TextChanged += CharacterTextChanged;
+            character6.Enter += CharacterEnter;
             // 
             // character7
             // 
@@ -127,6 +139,8 @@
             character7.Size = new Size(45, 44);
             character7.TabIndex = 9;
             character7.TextAlign = HorizontalAlignment.Center;
+            character7.TextChanged += CharacterTextChanged;
+            character7.Enter += CharacterEnter;
             // 
             // character8
             // 
@@ -137,6 +151,8 @@
             character8.Size = new Size(45, 44);
             character8.TabIndex = 10;
             character8.TextAlign = HorizontalAlignment.Center;
+            character8.TextChanged += CharacterTextChanged;
+            character8.Enter += CharacterEnter;
             // 
             // character9
             // 
@@ -147,6 +163,8 @@
             character9.Size = new Size(45, 44);
             character9.TabIndex = 11;
             character9.TextAlign = HorizontalAlignment.Center;
+            character9.TextChanged += CharacterTextChanged;
+            character9.Enter += CharacterEnter;
             // 
             // character10
             // 
@@ -157,6 +175,8 @@
             character10.Size = new Size(45, 44);
             character10.TabIndex = 12;
             character10.TextAlign = HorizontalAlignment.Center;
+            character10.TextChanged += CharacterTextChanged;
+            character10.Enter += CharacterEnter;
             // 
             // character11
             // 
@@ -167,6 +187,8 @@
             character11.Size = new Size(45, 44);
             character11.TabIndex = 13;
             character11.TextAlign = HorizontalAlignment.Center;
+            character11.TextChanged += CharacterTextChanged;
+            character11.Enter += CharacterEnter;
             // 
             // character12
             // 
@@ -177,6 +199,8 @@
             character12.Size = new Size(45, 44);
             character12.TabIndex = 14;
             character12.TextAlign = HorizontalAlignment.Center;
+            character12.TextChanged += CharacterTextChanged;
+            character12.Enter += CharacterEnter;
             // 
             // character13
             // 
@@ -187,6 +211,8 @@
             character13.Size = new Size(45, 44);
             character13.TabIndex = 15;
             character13.TextAlign = HorizontalAlignment.Center;
+            character13.TextChanged += CharacterTextChanged;
+            character13.Enter += CharacterEnter;
             // 
             // character14
             // 
@@ -197,6 +223,8 @@
             character14.Size = new Size(45, 44);
             character14.TabIndex = 16;
             character14.TextAlign = HorizontalAlignment.Center;
+            character14.TextChanged += CharacterTextChanged;
+            character14.Enter += CharacterEnter;
             // 
             // character15
             // 
@@ -207,6 +235,8 @@
             character15.Size = new Size(45, 44);
             character15.TabIndex = 17;
             character15.TextAlign = HorizontalAlignment.Center;
+            character15.TextChanged += CharacterTextChanged;
+            character15.Enter += CharacterEnter;
             // 
             // character16
             // 
@@ -217,26 +247,28 @@
             character16.Size = new Size(45, 44);
             character16.TabIndex = 18;
             character16.TextAlign = HorizontalAlignment.Center;
+            character16.TextChanged += CharacterTextChanged;
+            character16.Enter += CharacterEnter;
             // 
             // wordsListTextbox
             // 
-            wordsListTextbox.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            wordsListTextbox.BackColor = Color.White;
-            wordsListTextbox.Font = new Font("Source Code Pro Medium", 12F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            wordsListTextbox.Location = new Point(242, 12);
-            wordsListTextbox.Multiline = true;
-            wordsListTextbox.Name = "wordsListTextbox";
-            wordsListTextbox.ReadOnly = true;
-            wordsListTextbox.ScrollBars = ScrollBars.Vertical;
-            wordsListTextbox.Size = new Size(290, 465);
-            wordsListTextbox.TabIndex = 19;
+            wordList.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            wordList.ColumnWidth = 150;
+            wordList.Font = new Font("Source Code Pro Medium", 18F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            wordList.FormattingEnabled = true;
+            wordList.ItemHeight = 30;
+            wordList.Location = new Point(216, 12);
+            wordList.MultiColumn = true;
+            wordList.Name = "wordList";
+            wordList.Size = new Size(764, 424);
+            wordList.TabIndex = 20;
             // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(544, 489);
-            Controls.Add(wordsListTextbox);
+            ClientSize = new Size(992, 479);
+            Controls.Add(wordList);
             Controls.Add(character16);
             Controls.Add(character15);
             Controls.Add(character14);
@@ -254,7 +286,6 @@
             Controls.Add(character2);
             Controls.Add(character1);
             Controls.Add(findButton);
-            MaximizeBox = false;
             Name = "MainForm";
             Text = "Squares";
             ResumeLayout(false);
@@ -279,6 +310,6 @@
         private TextBox character14;
         private TextBox character15;
         private TextBox character16;
-        private TextBox wordsListTextbox;
+        private ListBox wordList;
     }
 }
