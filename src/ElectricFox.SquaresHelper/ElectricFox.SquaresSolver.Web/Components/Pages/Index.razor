@@ -1,0 +1,291 @@
+@page "/"
+@rendermode InteractiveServer
+
+<PageTitle>Squares Solver</PageTitle>
+
+<h1>Squares Solver</h1>
+
+<div class="grid-container">
+    <h3>Enter Letters (4x4 Grid)</h3>
+    <div class="letter-grid">
+        @for (int row = 0; row < 4; row++)
+        {
+            <div class="grid-row">
+                @for (int col = 0; col < 4; col++)
+                {
+                    int r = row;
+                    int c = col;
+                    int index = r * 4 + c;
+                    <input type="text" 
+                           maxlength="1" 
+                           value="@letters[r, c]"
+                           @oninput="@(e => OnLetterInput(e, r, c))"
+                           id="letter-@index"
+                           class="letter-input" />
+                }
+            </div>
+        }
+    </div>
+
+    <button class="btn btn-primary" @onclick="FindWords" disabled="@isSearching">
+        @if (isSearching)
+        {
+            <span>Searching...</span>
+        }
+        else
+        {
+            <span>Find Words</span>
+        }
+    </button>
+</div>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="error-message">
+        <strong>Error:</strong> @errorMessage
+    </div>
+}
+
+@if (foundWords.Any())
+{
+    <div class="results-container">
+        <h3>Found @foundWords.Count Words</h3>
+        <div class="word-list">
+            @foreach (var word in foundWords)
+            {
+                <div class="word-item">
+                    <span class="word-text">@word</span>
+                    <span class="word-length">(@word.Length letters)</span>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Inject]
+    private IConfiguration Configuration { get; set; } = default!;
+
+    [Inject]
+    private IWebHostEnvironment Environment { get; set; } = default!;
+
+    [Inject]
+    private IJSRuntime JSRuntime { get; set; } = default!;
+
+    private string[,] letters = new string[4, 4];
+    private bool isSearching = false;
+    private List<string> foundWords = new List<string>();
+    private string? errorMessage = null;
+
+    protected override void OnInitialized()
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < 4; j++)
+            {
+                letters[i, j] = "";
+            }
+        }
+    }
+
+    private async Task OnLetterInput(ChangeEventArgs e, int row, int col)
+    {
+        var value = e.Value?.ToString() ?? "";
+        letters[row, col] = value;
+
+        if (!string.IsNullOrEmpty(value))
+        {
+            int currentIndex = row * 4 + col;
+            int nextIndex = currentIndex + 1;
+
+            if (nextIndex < 16)
+            {
+                await JSRuntime.InvokeVoidAsync("focusElement", $"letter-{nextIndex}");
+            }
+        }
+    }
+
+    private async Task FindWords()
+    {
+        isSearching = true;
+        errorMessage = null;
+        foundWords.Clear();
+        StateHasChanged();
+
+        await Task.Run(() =>
+        {
+            try
+            {
+                var charLetters = new char[4, 4];
+
+                for (int i = 0; i < 4; i++)
+                {
+                    for (int j = 0; j < 4; j++)
+                    {
+                        if (string.IsNullOrWhiteSpace(letters[i, j]))
+                        {
+                            throw new InvalidOperationException("All grid cells must contain a letter.");
+                        }
+                        charLetters[i, j] = letters[i, j].ToLowerInvariant()[0];
+                    }
+                }
+
+                var solver = new Solver(charLetters);
+
+                var dictionaryPath = Configuration["DictionaryPath"] ?? Path.Combine(Environment.ContentRootPath, "wwwroot", "sowpods.txt");
+
+                if (!File.Exists(dictionaryPath))
+                {
+                    throw new FileNotFoundException($"Dictionary file not found at: {dictionaryPath}");
+                }
+
+                var sowpods = File.ReadAllLines(dictionaryPath);
+                var words = new List<string>();
+
+                foreach (var word in sowpods)
+                {
+                    if (word.Length < 4 || word.Length > 16)
+                    {
+                        continue;
+                    }
+
+                    if (solver.IsValidWord(word.ToLowerInvariant()))
+                    {
+                        words.Add(word);
+                    }
+                }
+
+                foundWords = words.OrderByDescending(w => w.Length).ThenBy(w => w).ToList();
+            }
+            catch (Exception ex)
+            {
+                errorMessage = ex.Message;
+            }
+        });
+
+        isSearching = false;
+        StateHasChanged();
+    }
+}
+
+<style>
+    .grid-container {
+        max-width: 600px;
+        margin: 20px auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .letter-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin: 20px 0;
+    }
+
+    .grid-row {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+    }
+
+    .letter-input {
+        width: 50px;
+        height: 50px;
+        text-align: center;
+        font-size: 24px;
+        font-weight: bold;
+        text-transform: uppercase;
+        border: 2px solid #007bff;
+        border-radius: 5px;
+        background-color: white;
+    }
+
+    .letter-input:focus {
+        outline: none;
+        border-color: #0056b3;
+        box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+    }
+
+    .btn {
+        padding: 10px 30px;
+        font-size: 18px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-top: 20px;
+        width: 100%;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+        background-color: #0056b3;
+    }
+
+    .btn-primary:disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+    }
+
+    h3 {
+        text-align: center;
+        color: #333;
+    }
+
+    .error-message {
+        max-width: 600px;
+        margin: 20px auto;
+        padding: 15px;
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+        border-radius: 5px;
+        text-align: center;
+    }
+
+    .results-container {
+        max-width: 800px;
+        margin: 30px auto;
+        padding: 20px;
+        background-color: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .word-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 10px;
+        margin-top: 20px;
+        max-height: 500px;
+        overflow-y: auto;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+
+    .word-item {
+        padding: 8px 12px;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .word-text {
+        font-weight: bold;
+        color: #007bff;
+    }
+
+    .word-length {
+        font-size: 12px;
+        color: #6c757d;
+    }
+</style>
