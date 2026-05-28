@@ -51,11 +51,33 @@
     <div class="results-container">
         <h3>Found @foundWords.Count Words</h3>
         <div class="word-list">
-            @foreach (var word in foundWords)
+            @foreach (var wordInfo in foundWords)
             {
                 <div class="word-item">
-                    <span class="word-text">@word</span>
-                    <span class="word-length">(@word.Length letters)</span>
+                    <div class="word-info" @onclick="@(() => ToggleWordFound(wordInfo))" style="cursor: pointer;">
+                        <span class="word-text" style="color: @GetWordColor(wordInfo.Status); text-decoration: @(wordInfo.IsFoundInGame ? "line-through" : "none")">@wordInfo.Word</span>
+                        <span class="word-length">(@wordInfo.Word.Length letters)</span>
+                    </div>
+                    <div class="word-actions">
+                        <button class="btn-status btn-verified" 
+                                @onclick="@(() => UpdateWordStatus(wordInfo.Word, "Verified"))" 
+                                disabled="@(isUpdatingStatus || wordInfo.Status == "Verified")" 
+                                title="Mark as verified">
+                            ✓
+                        </button>
+                        <button class="btn-status btn-bonus" 
+                                @onclick="@(() => UpdateWordStatus(wordInfo.Word, "Bonus"))" 
+                                disabled="@(isUpdatingStatus || wordInfo.Status == "Bonus")" 
+                                title="Mark as bonus">
+                            ★
+                        </button>
+                        <button class="btn-delete" 
+                                @onclick="@(() => DeleteWord(wordInfo.Word))" 
+                                disabled="@isDeletingWord" 
+                                title="Remove this word from dictionary">
+                            🗑️
+                        </button>
+                    </div>
                 </div>
             }
         </div>
@@ -72,9 +94,18 @@
     [Inject]
     private IJSRuntime JSRuntime { get; set; } = default!;
 
+    private class WordInfo
+    {
+        public string Word { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public bool IsFoundInGame { get; set; } = false;
+    }
+
     private string[,] letters = new string[4, 4];
     private bool isSearching = false;
-    private List<string> foundWords = new List<string>();
+    private bool isDeletingWord = false;
+    private bool isUpdatingStatus = false;
+    private List<WordInfo> foundWords = new List<WordInfo>();
     private string? errorMessage = null;
 
     protected override void OnInitialized()
@@ -140,10 +171,24 @@
                 }
 
                 var sowpods = File.ReadAllLines(dictionaryPath);
-                var words = new List<string>();
+                var words = new List<WordInfo>();
 
-                foreach (var word in sowpods)
+                foreach (var line in sowpods.Skip(1))
                 {
+                    if (string.IsNullOrWhiteSpace(line))
+                    {
+                        continue;
+                    }
+
+                    var parts = line.Split(',');
+                    if (parts.Length == 0)
+                    {
+                        continue;
+                    }
+
+                    var word = parts[0].Trim();
+                    var status = parts.Length > 1 ? parts[1].Trim() : string.Empty;
+
                     if (word.Length < 4 || word.Length > 16)
                     {
                         continue;
@@ -151,11 +196,11 @@
 
                     if (solver.IsValidWord(word.ToLowerInvariant()))
                     {
-                        words.Add(word);
+                        words.Add(new WordInfo { Word = word, Status = status });
                     }
                 }
 
-                foundWords = words.OrderByDescending(w => w.Length).ThenBy(w => w).ToList();
+                foundWords = words.OrderByDescending(w => w.Word.Length).ThenBy(w => w.Word).ToList();
             }
             catch (Exception ex)
             {
@@ -165,6 +210,166 @@
 
         isSearching = false;
         StateHasChanged();
+    }
+
+    private async Task DeleteWord(string word)
+    {
+        isDeletingWord = true;
+        errorMessage = null;
+        StateHasChanged();
+
+        await Task.Run(() =>
+        {
+            try
+            {
+                var dictionaryPath = Configuration["DictionaryPath"] ?? Path.Combine(Environment.ContentRootPath, "wwwroot", "sowpods.txt");
+
+                if (!File.Exists(dictionaryPath))
+                {
+                    throw new FileNotFoundException($"Dictionary file not found at: {dictionaryPath}");
+                }
+
+                var tempPath = Path.Combine(Path.GetDirectoryName(dictionaryPath)!, $"{Path.GetFileNameWithoutExtension(dictionaryPath)}_temp.csv");
+
+                using (var reader = new StreamReader(dictionaryPath))
+                using (var writer = new StreamWriter(tempPath))
+                {
+                    var header = reader.ReadLine();
+                    if (header != null)
+                    {
+                        writer.WriteLine(header);
+                    }
+
+                    string? line;
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        if (string.IsNullOrWhiteSpace(line))
+                        {
+                            writer.WriteLine(line);
+                            continue;
+                        }
+
+                        var parts = line.Split(',');
+                        if (parts.Length > 0)
+                        {
+                            var currentWord = parts[0].Trim();
+                            if (!string.Equals(currentWord, word, StringComparison.OrdinalIgnoreCase))
+                            {
+                                writer.WriteLine(line);
+                            }
+                        }
+                        else
+                        {
+                            writer.WriteLine(line);
+                        }
+                    }
+                }
+
+                File.Delete(dictionaryPath);
+                File.Move(tempPath, dictionaryPath);
+
+                foundWords.RemoveAll(w => string.Equals(w.Word, word, StringComparison.OrdinalIgnoreCase));
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error deleting word: {ex.Message}";
+            }
+        });
+
+        isDeletingWord = false;
+        StateHasChanged();
+    }
+
+    private async Task UpdateWordStatus(string word, string newStatus)
+    {
+        isUpdatingStatus = true;
+        errorMessage = null;
+        StateHasChanged();
+
+        await Task.Run(() =>
+        {
+            try
+            {
+                var dictionaryPath = Configuration["DictionaryPath"] ?? Path.Combine(Environment.ContentRootPath, "wwwroot", "sowpods.txt");
+
+                if (!File.Exists(dictionaryPath))
+                {
+                    throw new FileNotFoundException($"Dictionary file not found at: {dictionaryPath}");
+                }
+
+                var tempPath = Path.Combine(Path.GetDirectoryName(dictionaryPath)!, $"{Path.GetFileNameWithoutExtension(dictionaryPath)}_temp.csv");
+
+                using (var reader = new StreamReader(dictionaryPath))
+                using (var writer = new StreamWriter(tempPath))
+                {
+                    var header = reader.ReadLine();
+                    if (header != null)
+                    {
+                        writer.WriteLine(header);
+                    }
+
+                    string? line;
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        if (string.IsNullOrWhiteSpace(line))
+                        {
+                            writer.WriteLine(line);
+                            continue;
+                        }
+
+                        var parts = line.Split(',');
+                        if (parts.Length > 0)
+                        {
+                            var currentWord = parts[0].Trim();
+                            if (string.Equals(currentWord, word, StringComparison.OrdinalIgnoreCase))
+                            {
+                                writer.WriteLine($"{currentWord},{newStatus}");
+                            }
+                            else
+                            {
+                                writer.WriteLine(line);
+                            }
+                        }
+                        else
+                        {
+                            writer.WriteLine(line);
+                        }
+                    }
+                }
+
+                File.Delete(dictionaryPath);
+                File.Move(tempPath, dictionaryPath);
+
+                var wordInfo = foundWords.FirstOrDefault(w => string.Equals(w.Word, word, StringComparison.OrdinalIgnoreCase));
+                if (wordInfo != null)
+                {
+                    wordInfo.Status = newStatus;
+                }
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error updating word status: {ex.Message}";
+            }
+        });
+
+        isUpdatingStatus = false;
+        StateHasChanged();
+    }
+
+    private void ToggleWordFound(WordInfo wordInfo)
+    {
+        wordInfo.IsFoundInGame = !wordInfo.IsFoundInGame;
+        StateHasChanged();
+    }
+
+    private string GetWordColor(string status)
+    {
+        return status?.ToLowerInvariant() switch
+        {
+            "verified" => "#28a745",
+            "bonus" => "#9c27b0",
+            _ => "#000000"
+        };
     }
 }
 
@@ -277,15 +482,104 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        gap: 10px;
+    }
+
+    .word-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        flex: 1;
+        min-width: 0;
+        transition: background-color 0.2s;
+        padding: 4px;
+        border-radius: 4px;
+        margin: -4px;
+    }
+
+    .word-info:hover {
+        background-color: rgba(0, 123, 255, 0.1);
     }
 
     .word-text {
         font-weight: bold;
-        color: #007bff;
+        user-select: none;
     }
 
     .word-length {
         font-size: 12px;
         color: #6c757d;
+        user-select: none;
+    }
+
+    .word-actions {
+        display: flex;
+        gap: 5px;
+        flex-shrink: 0;
+    }
+
+    .btn-status {
+        border: none;
+        border-radius: 4px;
+        padding: 4px 8px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: all 0.2s;
+        flex-shrink: 0;
+        font-weight: bold;
+    }
+
+    .btn-verified {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .btn-verified:hover:not(:disabled) {
+        background-color: #218838;
+    }
+
+    .btn-verified:disabled {
+        background-color: #d4edda;
+        color: #155724;
+        cursor: not-allowed;
+        opacity: 0.8;
+    }
+
+    .btn-bonus {
+        background-color: #9c27b0;
+        color: white;
+    }
+
+    .btn-bonus:hover:not(:disabled) {
+        background-color: #7b1fa2;
+    }
+
+    .btn-bonus:disabled {
+        background-color: #e1bee7;
+        color: #4a148c;
+        cursor: not-allowed;
+        opacity: 0.8;
+    }
+
+    .btn-delete {
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 4px 8px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.2s;
+        flex-shrink: 0;
+    }
+
+    .btn-delete:hover:not(:disabled) {
+        background-color: #c82333;
+    }
+
+    .btn-delete:disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+        opacity: 0.6;
     }
 </style>

@@ -35,8 +35,21 @@ namespace ElectricFox.SquaresHelper.Ui
 
             var sowpods = File.ReadAllLines("Z:\\Assets\\sowpods.txt");
             var words = new List<string>();
-            foreach (var word in sowpods)
+            foreach (var line in sowpods.Skip(1))
             {
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    continue;
+                }
+
+                var parts = line.Split(',');
+                if (parts.Length == 0)
+                {
+                    continue;
+                }
+
+                var word = parts[0].Trim();
+
                 if (word.Length < 4 || word.Length > 16)
                 {
                     continue;
